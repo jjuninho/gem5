@@ -1476,6 +1476,10 @@ IEW::tick()
                 instQueue.replayMemInst(
                     fromCommit->commitInfo[tid].strictlyOrderedLoad);
                 fromCommit->commitInfo[tid].strictlyOrderedLoad->setAtCommit();
+            } else if (fromCommit->commitInfo[tid].lsqFwdMismatched) {
+                instQueue.replayMemInst(
+                    fromCommit->commitInfo[tid].lsqFwdMismatchedLoad);
+                fromCommit->commitInfo[tid].lsqFwdMismatchedLoad->setAtCommit();
             } else {
                 instQueue.scheduleNonSpec(
                     fromCommit->commitInfo[tid].nonSpecSeqNum);

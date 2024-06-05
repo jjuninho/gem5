@@ -1080,8 +1080,8 @@ InstructionQueue::addReadyMemInst(const DynInstPtr &ready_inst)
         addToOrderList(op_class);
     }
 
-    DPRINTF(IQ, "Instruction is ready to issue, putting it onto "
-            "the ready list, PC %s opclass:%i [sn:%llu].\n",
+    DPRINTF(IQ, "%s Instruction is ready to issue, putting it onto "
+            "the ready list, PC %s opclass:%i [sn:%llu].\n", __func__,
             ready_inst->pcState(), op_class, ready_inst->seqNum);
 }
 
@@ -1433,8 +1433,8 @@ InstructionQueue::addIfReady(const DynInstPtr &inst)
 
         OpClass op_class = inst->opClass();
 
-        DPRINTF(IQ, "Instruction is ready to issue, putting it onto "
-                "the ready list, PC %s opclass:%i [sn:%llu].\n",
+        DPRINTF(IQ, "%s Instruction is ready to issue, putting it onto "
+                "the ready list, PC %s opclass:%i [sn:%llu].\n", __func__,
                 inst->pcState(), op_class, inst->seqNum);
 
         readyInsts[op_class].push(inst);

@@ -168,6 +168,7 @@ class DynInst : public ExecContext, public RefCounted
                                  /// instructions ahead of it
         SerializeAfter,          /// Needs to serialize instructions behind it
         SerializeHandled,        /// Serialization has been handled
+        LsqFwdMismatched,
         NumStatus
     };
 
@@ -822,6 +823,16 @@ class DynInst : public ExecContext, public RefCounted
 
     /** Returns whether or not this instruction is squashed in the LSQ. */
     bool isSquashedInLSQ() const { return status[SquashedInLSQ]; }
+
+    void setLsqFwdMismatched() {
+        assert(isLoad());
+        status.set(LsqFwdMismatched);
+    }
+    bool isLsqFwdMismatched() { return status[LsqFwdMismatched]; }
+    void clearLsqFwdMismatched() {
+        assert(isLoad());
+        status.reset(LsqFwdMismatched);
+    }
 
 
     //Reorder Buffer Functions

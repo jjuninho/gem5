@@ -1110,8 +1110,7 @@ Commit::commitHead(const DynInstPtr &head_inst, unsigned inst_num)
                || head_inst->isReadBarrier() || head_inst->isWriteBarrier()
                || head_inst->isAtomic()
                || (head_inst->isLoad() && head_inst->strictlyOrdered())
-               || (head_inst->isLoad() && !head_inst->isIssued() &&
-                   !head_inst->readyToIssue()));
+               || head_inst->isLsqFwdMismatched());
 
         DPRINTF(Commit,
                 "Encountered a barrier or non-speculative "

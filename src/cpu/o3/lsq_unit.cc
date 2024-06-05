@@ -600,6 +600,8 @@ LSQUnit::executeLoad(const DynInstPtr &inst)
     load_fault = inst->initiateAcc();
 
     if (load_fault == NoFault && !inst->readMemAccPredicate()) {
+        DPRINTF(LSQUnit, "%s NoFault NoMemAccPredicate PC %s, [sn:%lli]\n", __func__,
+                inst->pcState(), inst->seqNum);
         assert(inst->readPredicate());
         inst->setExecuted();
         inst->completeAcc(nullptr);
@@ -608,18 +610,27 @@ LSQUnit::executeLoad(const DynInstPtr &inst)
         return NoFault;
     }
 
-    if (inst->isTranslationDelayed() && load_fault == NoFault)
+    if (inst->isTranslationDelayed() && load_fault == NoFault) {
+        DPRINTF(LSQUnit, "%s DelayedTranslation NoFault PC %s, [sn:%lli]\n", __func__,
+                inst->pcState(), inst->seqNum);
         return load_fault;
+    }
 
     if (load_fault != NoFault && inst->translationCompleted() &&
             inst->savedRequest->isPartialFault()
             && !inst->savedRequest->isComplete()) {
         assert(inst->savedRequest->isSplit());
-        // If we have a partial fault where the mem access is not complete yet
-        // then the cache must have been blocked. This load will be re-executed
-        // when the cache gets unblocked. We will handle the fault when the
-        // mem access is complete.
-        return NoFault;
+
+        // Alth
+        if (!inst->savedRequest->isTranslationComplete()) {
+            // If we have a partial fault where the mem access is not complete yet
+            // then the cache must have been blocked. This load will be re-executed
+            // when the cache gets unblocked. We will handle the fault when the
+            // mem access is complete.
+            DPRINTF(LSQUnit, "%s PartialFault PC %s, [sn:%lli]\n", __func__,
+                    inst->pcState(), inst->seqNum);
+            return NoFault;
+        }
     }
 
     // If the instruction faulted or predicated false, then we need to send it
@@ -639,7 +650,7 @@ LSQUnit::executeLoad(const DynInstPtr &inst)
         // LSQUnit clears Issued flag after calling rescheduleMemInst and
         // CanIssue flag is cleared in the rescheduleMemInst.
         // If either of them are set then it isn't rescheduled one.
-        if (((inst->isIssued() || inst->readyToIssue()) &&
+        if ((!inst->isLsqFwdMismatched() &&
              !(inst->hasRequest() && inst->strictlyOrdered())) ||
             inst->isAtCommit()) {
             inst->setExecuted();
@@ -650,6 +661,9 @@ LSQUnit::executeLoad(const DynInstPtr &inst)
         if (inst->effAddrValid()) {
             auto it = inst->lqIt;
             ++it;
+            DPRINTF(LSQUnit, "%s effAddrValud PC %s, [sn:%lli]\n", __func__,
+                inst->pcState(), inst->seqNum);
+
 
             if (checkLoads)
                 return checkViolations(it, inst);
@@ -1455,6 +1469,7 @@ LSQUnit::read(LSQRequest *request, ssize_t load_idx)
             }
 
             if (coverage == AddrRangeCoverage::FullAddrRangeCoverage) {
+                load_inst->clearLsqFwdMismatched();
                 // Get shift amount for offset into the store's data.
                 int shift_amt = request->mainReq()->getVaddr() -
                     store_it->instruction()->effAddr;
@@ -1557,6 +1572,7 @@ LSQUnit::read(LSQRequest *request, ssize_t load_idx)
                 iewStage->rescheduleMemInst(load_inst);
                 load_inst->clearIssued();
                 load_inst->effAddrValid(false);
+                load_inst->setLsqFwdMismatched();
                 ++stats.rescheduledLoads;
 
                 // Do not generate a writeback event as this instruction is not
@@ -1572,6 +1588,7 @@ LSQUnit::read(LSQRequest *request, ssize_t load_idx)
             }
         }
     }
+    load_inst->clearLsqFwdMismatched();
 
     // If there's no forwarding case, then go access memory
     DPRINTF(LSQUnit, "Doing memory access for inst [sn:%lli] PC %s\n",

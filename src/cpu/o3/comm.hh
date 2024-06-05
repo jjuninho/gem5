@@ -181,6 +181,10 @@ struct TimeStruct
         /// IEW stage.
         DynInstPtr strictlyOrderedLoad; // *I
 
+        ///
+        DynInstPtr lsqFwdMismatchedLoad;
+        bool lsqFwdMismatched;
+
         /// Communication specifically to the IQ to tell the IQ that it can
         /// schedule a non-speculative instruction.
         InstSeqNum nonSpecSeqNum; // *I
